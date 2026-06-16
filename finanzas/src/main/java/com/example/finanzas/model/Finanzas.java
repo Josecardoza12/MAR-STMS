@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import org.springframework.hateoas.RepresentationModel;
 import java.time.LocalDate;
 
 @Entity
@@ -14,11 +14,12 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "finanzas")
-public class Finanzas {
+public class Finanzas extends RepresentationModel<Finanzas> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "pago_Id")
     private Long pagoId;
 
@@ -36,5 +37,4 @@ public class Finanzas {
     @Positive(message = "El total debe ser mayor a 0")
     @Column(nullable = false)
     private Double total;
-
 }

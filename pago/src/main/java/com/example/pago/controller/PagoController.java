@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 import java.util.List;
 
 @Slf4j
@@ -23,7 +23,7 @@ public class PagoController {
     private PagoService pagoService;
 
     @Autowired
-    private OrdenTrabajoClient  ordenTrabajoClient;
+    private OrdenTrabajoClient ordenTrabajoClient;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
@@ -34,6 +34,10 @@ public class PagoController {
             log.warn("No hay pagos registrados");
             return ResponseEntity.noContent().build();
         }
+        lista.forEach(p -> {
+            p.add(linkTo(methodOn(PagoController.class).obtenerPorId(p.getId())).withSelfRel());
+            p.add(linkTo(methodOn(PagoController.class).listarTodos()).withRel("todos"));
+        });
         log.info("Se encontraron {} pagos", lista.size());
         return ResponseEntity.ok(lista);
     }
@@ -43,7 +47,10 @@ public class PagoController {
     public ResponseEntity<Pago> obtenerPorId(@PathVariable Long id) {
         log.info("GET /api/v1/pagos/{} - Buscando pago por id", id);
         try {
-            return ResponseEntity.ok(pagoService.obtenerPorId(id));
+            Pago p = pagoService.obtenerPorId(id);
+            p.add(linkTo(methodOn(PagoController.class).obtenerPorId(id)).withSelfRel());
+            p.add(linkTo(methodOn(PagoController.class).listarTodos()).withRel("todos"));
+            return ResponseEntity.ok(p);
         } catch (PagoNotFoundException e) {
             log.error("Pago con id {} no encontrado", id);
             return ResponseEntity.notFound().build();
@@ -59,6 +66,10 @@ public class PagoController {
             log.warn("No hay pagos para la OT {}", otId);
             return ResponseEntity.noContent().build();
         }
+        pagos.forEach(p -> {
+            p.add(linkTo(methodOn(PagoController.class).obtenerPorId(p.getId())).withSelfRel());
+            p.add(linkTo(methodOn(PagoController.class).listarTodos()).withRel("todos"));
+        });
         return ResponseEntity.ok(pagos);
     }
 
@@ -68,10 +79,7 @@ public class PagoController {
             @Valid @RequestBody Pago pago,
             @RequestHeader("Authorization") String token) {
         log.info("POST /api/v1/pagos - Registrando pago para OT {}", pago.getOtId());
-
-
-        ordenTrabajoClient.obtenerOt(pago.getOtId(),token).block();
-
+        ordenTrabajoClient.obtenerOt(pago.getOtId(), token).block();
         Pago p = pagoService.registrar(pago, token);
         log.info("Pago registrado con id {}", p.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(p);
@@ -84,8 +92,7 @@ public class PagoController {
             @Valid @RequestBody Pago pagoActualizado,
             @RequestHeader("Authorization") String token) {
         log.info("PUT /api/v1/pagos/{} - Actualizando pago", id);
-        ordenTrabajoClient.obtenerOt(pagoActualizado.getOtId(),token).block();
-
+        ordenTrabajoClient.obtenerOt(pagoActualizado.getOtId(), token).block();
         try {
             return ResponseEntity.ok(pagoService.actualizar(id, pagoActualizado));
         } catch (PagoNotFoundException e) {

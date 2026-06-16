@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import org.springframework.hateoas.RepresentationModel;
 import java.time.LocalDate;
 
 @Entity
@@ -14,7 +14,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "pago")
-public class Pago {
+public class Pago extends RepresentationModel<Pago> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +23,6 @@ public class Pago {
     @NotNull(message = "El ID de la OT es obligatorio")
     @Column(nullable = false)
     private Long otId;
-
 
     private LocalDate fecha;
 

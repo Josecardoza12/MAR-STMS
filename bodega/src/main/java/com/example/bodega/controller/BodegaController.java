@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 import java.util.List;
 
 @Slf4j
@@ -34,6 +34,9 @@ public class BodegaController {
             log.warn("No hay equipos en bodega");
             return ResponseEntity.noContent().build();
         }
+        lista.forEach(b -> {
+            b.add(linkTo(methodOn(BodegaController.class).listarTodos()).withRel("todos"));
+        });
         log.info("Se encontraron {} equipos en bodega", lista.size());
         return ResponseEntity.ok(lista);
     }
@@ -44,6 +47,8 @@ public class BodegaController {
         log.info("GET /api/v1/bodega/ot/{} - Buscando bodega por OT", otId);
         return bodegaService.obtenerPorOtId(otId)
                 .map(b -> {
+                    b.add(linkTo(methodOn(BodegaController.class).obtenerPorOtId(otId)).withSelfRel());
+                    b.add(linkTo(methodOn(BodegaController.class).listarTodos()).withRel("todos"));
                     log.info("Bodega encontrada para OT {}", otId);
                     return ResponseEntity.ok(b);
                 })
@@ -58,8 +63,7 @@ public class BodegaController {
     public ResponseEntity<Bodega> registrar(@Valid @RequestBody Bodega bodega,
                                             @RequestHeader("Authorization") String token) {
         log.info("POST /api/v1/bodega - Registrando equipo en bodega para OT {}", bodega.getOtId());
-        ordenTrabajoClient.obtenerOt(bodega.getOtId(),token).block();
-
+        ordenTrabajoClient.obtenerOt(bodega.getOtId(), token).block();
         Bodega b = bodegaService.registrar(bodega);
         log.info("Equipo registrado en bodega con id {}", b.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(b);
@@ -67,11 +71,10 @@ public class BodegaController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Bodega> actualizar(@PathVariable Long id,@RequestBody Bodega bodega,
+    public ResponseEntity<Bodega> actualizar(@PathVariable Long id, @RequestBody Bodega bodega,
                                              @RequestHeader("Authorization") String token) {
         log.info("PUT /api/v1/bodega/{} - Actualizando días y cobro", id);
-        ordenTrabajoClient.obtenerOt(bodega.getOtId(),token).block();
-
+        ordenTrabajoClient.obtenerOt(bodega.getOtId(), token).block();
         Bodega b = bodegaService.actualizar(id);
         log.info("Bodega {} actualizada - Días: {}, Monto: {}", id, b.getDiasEnBodega(), b.getMontoBodegaje());
         return ResponseEntity.ok(b);

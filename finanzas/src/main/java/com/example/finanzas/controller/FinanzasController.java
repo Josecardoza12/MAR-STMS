@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +30,10 @@ public class FinanzasController {
     public ResponseEntity<List<Finanzas>> listarTodos() {
         List<Finanzas> lista = finanzasService.listarTodos();
         if (lista.isEmpty()) return ResponseEntity.noContent().build();
+        lista.forEach(f -> {
+            f.add(linkTo(methodOn(FinanzasController.class).obtenerPorId(f.getId())).withSelfRel());
+            f.add(linkTo(methodOn(FinanzasController.class).listarTodos()).withRel("todos"));
+        });
         return ResponseEntity.ok(lista);
     }
 
@@ -37,30 +41,36 @@ public class FinanzasController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Finanzas> obtenerPorId(@PathVariable Long id) {
         try {
-            return ResponseEntity.ok(finanzasService.obtenerPorId(id));
+            Finanzas f = finanzasService.obtenerPorId(id);
+            f.add(linkTo(methodOn(FinanzasController.class).obtenerPorId(id)).withSelfRel());
+            f.add(linkTo(methodOn(FinanzasController.class).listarTodos()).withRel("todos"));
+            return ResponseEntity.ok(f);
         } catch (FinanzasNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
-
 
     @GetMapping(params = "PagoId")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Finanzas>> listarPorOtId(@RequestParam Long PagoId) {
         List<Finanzas> lista = finanzasService.listarPorPagoId(PagoId);
         if (lista.isEmpty()) return ResponseEntity.noContent().build();
+        lista.forEach(f -> {
+            f.add(linkTo(methodOn(FinanzasController.class).obtenerPorId(f.getId())).withSelfRel());
+            f.add(linkTo(methodOn(FinanzasController.class).listarTodos()).withRel("todos"));
+        });
         return ResponseEntity.ok(lista);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Finanzas> registrar(@Valid @RequestBody Finanzas gasto,@RequestHeader("Authorization") String token) {
+    public ResponseEntity<Finanzas> registrar(@Valid @RequestBody Finanzas gasto, @RequestHeader("Authorization") String token) {
         log.info("POST /api/v1/gastos - Registrando gasto categoria {}", gasto.getCategoria());
-        pagoClient.obtenerPago(gasto.getPagoId(),token).block();
-
+        pagoClient.obtenerPago(gasto.getPagoId(), token).block();
         Finanzas g = finanzasService.registrar(gasto);
         return ResponseEntity.status(HttpStatus.CREATED).body(g);
     }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TECNICO')")
     public ResponseEntity<Finanzas> actualizar(
@@ -68,7 +78,7 @@ public class FinanzasController {
             @Valid @RequestBody Finanzas finanzasActualizado,
             @RequestHeader("Authorization") String token) {
         log.info("PUT /api/v1/finanzas/{} - Actualizando finanza", id);
-        pagoClient.obtenerPago(finanzasActualizado.getPagoId(),token).block();
+        pagoClient.obtenerPago(finanzasActualizado.getPagoId(), token).block();
         try {
             return ResponseEntity.ok(finanzasService.actualizar(id, finanzasActualizado));
         } catch (FinanzasNotFoundException e) {
