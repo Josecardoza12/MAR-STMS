@@ -1,0 +1,261 @@
+services:
+
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      SERVER_PORT: 8761
+      SPRING_APPLICATION_NAME: eureka-server
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    networks:
+      - marstms-network
+
+  auth:
+    build: ./auth
+    container_name: auth
+    ports:
+      - "9090:9090"
+    environment:
+      SERVER_PORT: 9090
+      SPRING_APPLICATION_NAME: AUTH
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_auth?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  cliente:
+    build: ./cliente
+    container_name: cliente
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+      SPRING_APPLICATION_NAME: CLIENTE
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_equipo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      auth:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  equipo:
+    build: ./equipo
+    container_name: equipo
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      SPRING_APPLICATION_NAME: EQUIPO
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_equipo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      cliente:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  orden_trabajo:
+    build: ./orden_trabajo
+    container_name: orden_trabajo
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      SPRING_APPLICATION_NAME: ordenTrabajo
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_ot?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      cliente:
+        condition: service_started
+      equipo:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  diagnostico:
+    build: ./diagnostico
+    container_name: diagnostico
+    ports:
+      - "8085:8085"
+    environment:
+      SERVER_PORT: 8085
+      SPRING_APPLICATION_NAME: DIAGNOSTICO
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/diagnostico_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      orden_trabajo:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  reparacion:
+    build: ./reparacion
+    container_name: reparacion
+    ports:
+      - "8086:8086"
+    environment:
+      SERVER_PORT: 8086
+      SPRING_APPLICATION_NAME: REPARACION
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_reparacion?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      diagnostico:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  inventario:
+    build: ./inventario
+    container_name: inventario
+    ports:
+      - "8087:8087"
+    environment:
+      SERVER_PORT: 8087
+      SPRING_APPLICATION_NAME: INVENTARIO
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_inventario?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  bodega:
+    build: ./bodega
+    container_name: bodega
+    ports:
+      - "8088:8088"
+    environment:
+      SERVER_PORT: 8088
+      SPRING_APPLICATION_NAME: BODEGA
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_bodega?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      inventario:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  pago:
+    build: ./pago
+    container_name: pago
+    ports:
+      - "8089:8089"
+    environment:
+      SERVER_PORT: 8089
+      SPRING_APPLICATION_NAME: PAGO
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_pagos?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      orden_trabajo:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  finanzas:
+    build: ./finanzas
+    container_name: finanzas
+    ports:
+      - "8091:8091"
+    environment:
+      SERVER_PORT: 8091
+      SPRING_APPLICATION_NAME: FINANZAS
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/db_finanzas?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_FLYWAY_CONNECT_RETRIES: 20
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      pago:
+        condition: service_started
+    networks:
+      - marstms-network
+
+  apigateway-server:
+    build: ./apigateway-server
+    container_name: apigateway-server
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_APPLICATION_NAME: apigateway-server
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      auth:
+        condition: service_started
+      cliente:
+        condition: service_started
+      equipo:
+        condition: service_started
+      orden_trabajo:
+        condition: service_started
+      diagnostico:
+        condition: service_started
+      reparacion:
+        condition: service_started
+      inventario:
+        condition: service_started
+      bodega:
+        condition: service_started
+      pago:
+        condition: service_started
+      finanzas:
+        condition: service_started
+    networks:
+      - marstms-network
+
+networks:
+  marstms-network:
+    driver: bridge
