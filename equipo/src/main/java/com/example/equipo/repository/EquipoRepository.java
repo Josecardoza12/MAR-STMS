@@ -7,4 +7,8 @@ import java.util.List;
 
 public interface EquipoRepository extends JpaRepository<Equipo,Long> {
     List<Equipo> findByIdCliente(Long idCliente);
+
+    //buscar por modelo texto parcial
+
+    List<Equipo> findByModeloContaining(String modelo);
 }

@@ -37,6 +37,10 @@ public class EquipoService {
         return  equipoRepository.findByIdCliente(idCliente);
     }
 
+    public List<Equipo> findByModeloContaining(String modelo ){
+        return equipoRepository.findByModeloContaining(modelo);
+    }
+
 
     public Equipo saveEquipo(Equipo equipo){
 
