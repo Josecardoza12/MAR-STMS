@@ -1,63 +1,62 @@
 package com.example.diagnostico.security.filter;
 
 import com.example.diagnostico.security.jwt.JwtService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JwtAuthFilter extends OncePerRequestFilter {
+public class JwtAuthFilter implements WebFilter {
 
     private final JwtService jwtService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain chain)
-            throws ServletException, IOException {
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = exchange.getRequest()
+                .getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            chain.doFilter(request, response);
-            return;
+            return chain.filter(exchange);
         }
 
         try {
             String token = authHeader.substring(7);
 
             if (jwtService.isTokenValid(token)) {
+
                 String username = jwtService.extractUsername(token);
                 String role = jwtService.extractRole(token);
 
                 log.info("Token válido para usuario {} con rol {}", username, role);
 
-                var authToken = new UsernamePasswordAuthenticationToken(
+                var auth = new UsernamePasswordAuthenticationToken(
                         username,
                         null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 );
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                return chain.filter(exchange)
+                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
             }
 
         } catch (Exception e) {
             log.error("Error procesando JWT: {}", e.getMessage());
         }
 
-        chain.doFilter(request, response);
+        return chain.filter(exchange);
     }
 }
