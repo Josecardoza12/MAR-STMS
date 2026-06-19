@@ -1,36 +1,41 @@
 package com.example.diagnostico.security.filter;
 
 import com.example.diagnostico.security.jwt.JwtService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
-import org.springframework.web.server.WebFilterChain;
-import reactor.core.publisher.Mono;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.List;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JwtAuthFilter implements WebFilter {
+public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String authHeader = exchange.getRequest()
-                .getHeaders()
-                .getFirst(HttpHeaders.AUTHORIZATION);
+        String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return chain.filter(exchange);
+            filterChain.doFilter(request, response);
+            return;
         }
 
         try {
@@ -43,20 +48,23 @@ public class JwtAuthFilter implements WebFilter {
 
                 log.info("Token válido para usuario {} con rol {}", username, role);
 
-                var auth = new UsernamePasswordAuthenticationToken(
-                        username,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                List<GrantedAuthority> authorities =
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(username, null, authorities);
+
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
                 );
 
-                return chain.filter(exchange)
-                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
 
         } catch (Exception e) {
             log.error("Error procesando JWT: {}", e.getMessage());
         }
 
-        return chain.filter(exchange);
+        filterChain.doFilter(request, response);
     }
 }

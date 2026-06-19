@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
@@ -21,6 +22,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -36,15 +38,17 @@ public class ReparacionController {
     @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente")
     @PreAuthorize("hasAnyRole('CLIENTE','TECNICO','ADMIN')")
     @GetMapping
-    public List<Reparacion> getAll() {
+    public ResponseEntity<CollectionModel<Reparacion>> getAll() {
         log.info("GET api/v1/reparaciones");
         List<Reparacion> lista = service.findAll();
 
         lista.forEach(r -> {
             r.add(linkTo(methodOn(ReparacionController.class).getById(r.getReparacionId())).withSelfRel());
+            r.add(linkTo(methodOn(ReparacionController.class).delete(r.getReparacionId())).withRel("eliminar"));
+            r.add(linkTo(methodOn(ReparacionController.class).getByOtId(r.getOtId())).withRel("OT"));
         });
 
-        return lista;
+        return ResponseEntity.ok(CollectionModel.of(lista));
     }
 
     @Operation(summary = "Obtener reparación por ID")
@@ -54,28 +58,30 @@ public class ReparacionController {
     })
     @PreAuthorize("hasAnyRole('CLIENTE','TECNICO','ADMIN')")
     @GetMapping("/{id}")
-    public Reparacion getById(@PathVariable Long id) {
+    public ResponseEntity<Reparacion> getById(@PathVariable Long id) {
         log.info("GET api/v1/reparaciones/{}", id);
         Reparacion r = service.findById(id);
 
         r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
         r.add(linkTo(methodOn(ReparacionController.class).update(id, r, null)).withRel("update"));
-        r.add(linkTo(methodOn(ReparacionController.class).delete(id)).withRel("delete"));
+        r.add(linkTo(methodOn(ReparacionController.class).delete(id)).withRel("eliminar"));
+        r.add(linkTo(methodOn(ReparacionController.class).getByOtId(r.getOtId())).withRel("OT"));
 
-        return r;
+        return ResponseEntity.ok(r);
     }
 
     @Operation(summary = "Obtener reparación por OT")
     @PreAuthorize("hasAnyRole('CLIENTE','TECNICO','ADMIN')")
     @GetMapping(params = "otId")
-    public Reparacion getByOtId(@RequestParam Long otId) {
+    public ResponseEntity<Reparacion> getByOtId(@RequestParam Long otId) {
         log.info("GET api/v1/reparaciones?otId={}", otId);
         Reparacion r = service.findByOtId(otId);
 
         r.add(linkTo(methodOn(ReparacionController.class).getById(r.getReparacionId())).withSelfRel());
         r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
+        r.add(linkTo(methodOn(ReparacionController.class).delete(r.getReparacionId())).withRel("eliminar"));
 
-        return r;
+        return ResponseEntity.ok(r);
     }
 
     @Operation(summary = "Crear reparación")
@@ -96,6 +102,7 @@ public class ReparacionController {
 
         r.add(linkTo(methodOn(ReparacionController.class).getById(r.getReparacionId())).withSelfRel());
         r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
+        r.add(linkTo(methodOn(ReparacionController.class).delete(r.getReparacionId())).withRel("eliminar"));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(r);
     }
@@ -103,7 +110,7 @@ public class ReparacionController {
     @Operation(summary = "Actualizar reparación")
     @PreAuthorize("hasAnyRole('TECNICO','ADMIN')")
     @PutMapping("/{id}")
-    public Reparacion update(
+    public ResponseEntity<Reparacion> update(
             @PathVariable Long id,
             @Valid @RequestBody Reparacion reparacion,
             @RequestHeader("Authorization") String token) {
@@ -115,8 +122,9 @@ public class ReparacionController {
 
         r.add(linkTo(methodOn(ReparacionController.class).getById(id)).withSelfRel());
         r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
+        r.add(linkTo(methodOn(ReparacionController.class).delete(id)).withRel("eliminar"));
 
-        return r;
+        return ResponseEntity.ok(r);
     }
 
     @Operation(summary = "Eliminar reparación")
