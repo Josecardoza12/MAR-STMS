@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 import org.springframework.http.HttpStatus;
@@ -36,15 +35,18 @@ public class DiagnosticoController {
     @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente")
     @PreAuthorize("hasAnyRole('CLIENTE','TECNICO','ADMIN')")
     @GetMapping
-    public List<Diagnostico> getAll() {
+    public ResponseEntity<List<Diagnostico>> getAll() {
         log.info("GET api/v1/diagnosticos");
+
         List<Diagnostico> lista = service.findAll();
 
         lista.forEach(d -> {
-            d.add(linkTo(methodOn(DiagnosticoController.class).getById(d.getDiagnosticoId())).withSelfRel());
+            d.add(linkTo(methodOn(DiagnosticoController.class)
+                    .getById(d.getDiagnosticoId()))
+                    .withRel("self"));
         });
 
-        return lista;
+        return ResponseEntity.ok(lista);
     }
 
     @Operation(summary = "Obtener diagnóstico por ID")
@@ -54,28 +56,43 @@ public class DiagnosticoController {
     })
     @PreAuthorize("hasAnyRole('CLIENTE','TECNICO','ADMIN')")
     @GetMapping("/{id}")
-    public Diagnostico getById(@PathVariable Long id) {
+    public ResponseEntity<Diagnostico> getById(@PathVariable Long id) {
         log.info("GET api/v1/diagnosticos/{}", id);
+
         Diagnostico d = service.findById(id);
 
-        d.add(linkTo(methodOn(DiagnosticoController.class).getAll()).withRel("todos"));
-        d.add(linkTo(methodOn(DiagnosticoController.class).update(id, d, null)).withRel("update"));
-        d.add(linkTo(methodOn(DiagnosticoController.class).delete(id)).withRel("delete"));
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getById(id))
+                .withRel("self"));
 
-        return d;
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getAll())
+                .withRel("todos"));
+
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .delete(id))
+                .withRel("eliminar"));
+
+        return ResponseEntity.ok(d);
     }
 
     @Operation(summary = "Obtener diagnóstico por OT")
     @PreAuthorize("hasAnyRole('CLIENTE','TECNICO','ADMIN')")
     @GetMapping(params = "otId")
-    public Diagnostico getByOtId(@RequestParam Long otId) {
+    public ResponseEntity<Diagnostico> getByOtId(@RequestParam Long otId) {
         log.info("GET api/v1/diagnosticos?otId={}", otId);
+
         Diagnostico d = service.findByOtId(otId);
 
-        d.add(linkTo(methodOn(DiagnosticoController.class).getById(d.getDiagnosticoId())).withSelfRel());
-        d.add(linkTo(methodOn(DiagnosticoController.class).getAll()).withRel("todos"));
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getById(d.getDiagnosticoId()))
+                .withRel("self"));
 
-        return d;
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getAll())
+                .withRel("todos"));
+
+        return ResponseEntity.ok(d);
     }
 
     @Operation(summary = "Crear diagnóstico")
@@ -90,12 +107,18 @@ public class DiagnosticoController {
             @RequestHeader("Authorization") String token) {
 
         log.info("POST api/v1/diagnosticos");
+
         ordenTrabajoClient.obtenerOt(diagnostico.getOtId(), token).block();
 
         Diagnostico d = service.save(diagnostico, token);
 
-        d.add(linkTo(methodOn(DiagnosticoController.class).getById(d.getDiagnosticoId())).withSelfRel());
-        d.add(linkTo(methodOn(DiagnosticoController.class).getAll()).withRel("todos"));
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getById(d.getDiagnosticoId()))
+                .withRel("self"));
+
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getAll())
+                .withRel("todos"));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(d);
     }
@@ -103,20 +126,26 @@ public class DiagnosticoController {
     @Operation(summary = "Actualizar diagnóstico")
     @PreAuthorize("hasAnyRole('TECNICO','ADMIN')")
     @PutMapping("/{id}")
-    public Diagnostico update(
+    public ResponseEntity<Diagnostico> update(
             @PathVariable Long id,
             @Valid @RequestBody Diagnostico diagnostico,
             @RequestHeader("Authorization") String token) {
 
         log.info("PUT api/v1/diagnosticos/{}", id);
+
         ordenTrabajoClient.obtenerOt(diagnostico.getOtId(), token).block();
 
         Diagnostico d = service.update(id, diagnostico, token);
 
-        d.add(linkTo(methodOn(DiagnosticoController.class).getById(id)).withSelfRel());
-        d.add(linkTo(methodOn(DiagnosticoController.class).getAll()).withRel("todos"));
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getById(id))
+                .withRel("self"));
 
-        return d;
+        d.add(linkTo(methodOn(DiagnosticoController.class)
+                .getAll())
+                .withRel("todos"));
+
+        return ResponseEntity.ok(d);
     }
 
     @Operation(summary = "Eliminar diagnóstico")

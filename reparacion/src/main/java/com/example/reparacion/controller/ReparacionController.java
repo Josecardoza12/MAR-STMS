@@ -7,10 +7,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +21,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -40,12 +38,21 @@ public class ReparacionController {
     @GetMapping
     public ResponseEntity<CollectionModel<Reparacion>> getAll() {
         log.info("GET api/v1/reparaciones");
+
         List<Reparacion> lista = service.findAll();
 
         lista.forEach(r -> {
-            r.add(linkTo(methodOn(ReparacionController.class).getById(r.getReparacionId())).withSelfRel());
-            r.add(linkTo(methodOn(ReparacionController.class).delete(r.getReparacionId())).withRel("eliminar"));
-            r.add(linkTo(methodOn(ReparacionController.class).getByOtId(r.getOtId())).withRel("OT"));
+            r.add(linkTo(methodOn(ReparacionController.class)
+                    .getById(r.getReparacionId()))
+                    .withRel("self"));
+
+            r.add(linkTo(methodOn(ReparacionController.class)
+                    .delete(r.getReparacionId()))
+                    .withRel("eliminar"));
+
+            r.add(linkTo(methodOn(ReparacionController.class)
+                    .getByOtId(r.getOtId()))
+                    .withRel("ot"));
         });
 
         return ResponseEntity.ok(CollectionModel.of(lista));
@@ -60,12 +67,24 @@ public class ReparacionController {
     @GetMapping("/{id}")
     public ResponseEntity<Reparacion> getById(@PathVariable Long id) {
         log.info("GET api/v1/reparaciones/{}", id);
+
         Reparacion r = service.findById(id);
 
-        r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
-        r.add(linkTo(methodOn(ReparacionController.class).update(id, r, null)).withRel("update"));
-        r.add(linkTo(methodOn(ReparacionController.class).delete(id)).withRel("eliminar"));
-        r.add(linkTo(methodOn(ReparacionController.class).getByOtId(r.getOtId())).withRel("OT"));
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getById(id))
+                .withRel("self"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getAll())
+                .withRel("todos"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .delete(id))
+                .withRel("eliminar"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getByOtId(r.getOtId()))
+                .withRel("ot"));
 
         return ResponseEntity.ok(r);
     }
@@ -75,11 +94,20 @@ public class ReparacionController {
     @GetMapping(params = "otId")
     public ResponseEntity<Reparacion> getByOtId(@RequestParam Long otId) {
         log.info("GET api/v1/reparaciones?otId={}", otId);
+
         Reparacion r = service.findByOtId(otId);
 
-        r.add(linkTo(methodOn(ReparacionController.class).getById(r.getReparacionId())).withSelfRel());
-        r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
-        r.add(linkTo(methodOn(ReparacionController.class).delete(r.getReparacionId())).withRel("eliminar"));
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getById(r.getReparacionId()))
+                .withRel("self"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getAll())
+                .withRel("todos"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .delete(r.getReparacionId()))
+                .withRel("eliminar"));
 
         return ResponseEntity.ok(r);
     }
@@ -96,13 +124,22 @@ public class ReparacionController {
             @RequestHeader("Authorization") String token) {
 
         log.info("POST api/v1/reparaciones");
+
         ordenTrabajoClient.obtenerOt(reparacion.getOtId(), token).block();
 
         Reparacion r = service.save(reparacion, token);
 
-        r.add(linkTo(methodOn(ReparacionController.class).getById(r.getReparacionId())).withSelfRel());
-        r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
-        r.add(linkTo(methodOn(ReparacionController.class).delete(r.getReparacionId())).withRel("eliminar"));
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getById(r.getReparacionId()))
+                .withRel("self"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getAll())
+                .withRel("todos"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .delete(r.getReparacionId()))
+                .withRel("eliminar"));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(r);
     }
@@ -116,13 +153,22 @@ public class ReparacionController {
             @RequestHeader("Authorization") String token) {
 
         log.info("PUT api/v1/reparaciones/{}", id);
+
         ordenTrabajoClient.obtenerOt(reparacion.getOtId(), token).block();
 
         Reparacion r = service.update(id, reparacion, token);
 
-        r.add(linkTo(methodOn(ReparacionController.class).getById(id)).withSelfRel());
-        r.add(linkTo(methodOn(ReparacionController.class).getAll()).withRel("todos"));
-        r.add(linkTo(methodOn(ReparacionController.class).delete(id)).withRel("eliminar"));
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getById(id))
+                .withRel("self"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .getAll())
+                .withRel("todos"));
+
+        r.add(linkTo(methodOn(ReparacionController.class)
+                .delete(id))
+                .withRel("eliminar"));
 
         return ResponseEntity.ok(r);
     }
