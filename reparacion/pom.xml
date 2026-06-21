@@ -21,7 +21,7 @@
         <spring-cloud.version>2023.0.3</spring-cloud.version>
     </properties>
 
-    <!-- SPRING CLOUD COMPATIBLE -->
+    <!-- SPRING CLOUD BOM -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -36,17 +36,30 @@
 
     <dependencies>
 
-        <!-- WEB (MVC) -->
+        <!-- SWAGGER COMPATIBLE CON SPRING BOOT 3.2.x (MVC) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
+        <!-- HATEOAS -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-hateoas</artifactId>
+        </dependency>
+
+        <!-- MVC (TOMCAT) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- WEBCLIENT (REACTIVO) — SOLO SI LO USAS COMO CLIENTE -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
-
 
         <!-- JPA -->
         <dependency>
@@ -116,7 +129,7 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
 
-        <!-- TESTS CORRECTOS -->
+        <!-- TESTS -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -133,20 +146,10 @@
 
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
             </plugin>
-
         </plugins>
     </build>
 

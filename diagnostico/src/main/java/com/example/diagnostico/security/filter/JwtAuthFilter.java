@@ -8,8 +8,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -26,13 +28,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain chain)
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            chain.doFilter(request, response);
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -40,15 +42,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
 
             if (jwtService.isTokenValid(token)) {
+
                 String username = jwtService.extractUsername(token);
                 String role = jwtService.extractRole(token);
 
                 log.info("Token válido para usuario {} con rol {}", username, role);
 
-                var authToken = new UsernamePasswordAuthenticationToken(
-                        username,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                List<GrantedAuthority> authorities =
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(username, null, authorities);
+
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
                 );
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
@@ -58,6 +65,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             log.error("Error procesando JWT: {}", e.getMessage());
         }
 
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 }
